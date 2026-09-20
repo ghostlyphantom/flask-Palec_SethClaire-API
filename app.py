@@ -24,6 +24,7 @@ def get_course():
         "course": IT3120,
         "instructor": "Mr. Rene Arduo",
         "schedule": "Every Sunday"
+    })
 
 @app.route('/subject')
 def get_subject():
