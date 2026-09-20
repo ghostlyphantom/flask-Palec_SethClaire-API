@@ -21,7 +21,7 @@ def get_student():
 @app.route('/course')
 def get_course():
     return jsonify({
-        "course": IT3120,
+        "course": "IT3120",
         "instructor": "Mr. Rene Arduo",
         "schedule": "Every Sunday"
     })
