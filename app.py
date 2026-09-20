@@ -28,7 +28,7 @@ def get_course():
 
 @app.route('/instructor')
 def get_instructor():
-    subject = request.args.get('instructor', 'Dr.Arduo')
+    instructor = request.args.get('instructor', 'Dr.Arduo')
 
     return jsonify({
         "message": f"Your instructor in  IT310 subject is {instructor}."
