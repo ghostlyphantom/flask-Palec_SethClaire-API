@@ -26,13 +26,15 @@ def get_course():
         "schedule": "Every Sunday"
     })
 
-@app.route('/subject')
-def get_subject():
+@app.route('/instructor')
+def get_instructor():
     subject = request.args.get('instructor', 'Dr.Arduo')
 
     return jsonify({
         "message": f"Your instructor in  IT310 subject is {instructor}."
     })
+
+
 
 @app.route('/hello')
 def say_hello():
