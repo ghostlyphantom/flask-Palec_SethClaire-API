@@ -1,0 +1,433 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Student API Interface</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            background: linear-gradient(135deg, #eaf3ff, #f5f9ff);
+            color: #1e293b;
+            margin: 0;
+            padding: 40px 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 65px;
+            height: 65px;
+            border-radius: 18px;
+            background: #2563eb;
+            color: white;
+            font-size: 30px;
+            margin-bottom: 12px;
+            box-shadow: 0 8px 20px rgba(37, 99, 235, 0.25);
+        }
+
+        h1 {
+            color: #1746a2;
+            font-size: 30px;
+            margin: 5px 0 10px;
+        }
+
+        .subtitle {
+            color: #64748b;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .card {
+            background: #ffffff;
+            border: 1px solid #dbeafe;
+            border-radius: 18px;
+            padding: 28px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 25px rgba(30, 64, 175, 0.08);
+        }
+
+        .card h2 {
+            color: #1d4ed8;
+            font-size: 21px;
+            margin: 0 0 10px;
+        }
+
+        .description {
+            color: #64748b;
+            font-size: 14px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 9px;
+            padding: 12px 18px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.2s;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        input {
+            display: block;
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 9px;
+            font-size: 14px;
+            margin-bottom: 12px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        #result,
+        #courseResult,
+        #greeting {
+            margin-top: 20px;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #dbeafe;
+            border-radius: 12px;
+            padding: 16px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 15px;
+            padding: 12px 4px;
+            border-bottom: 1px solid #dbeafe;
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: #475569;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .info-value {
+            color: #1d4ed8;
+            font-weight: 600;
+            text-align: right;
+            overflow-wrap: anywhere;
+        }
+
+        .greeting-box {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border-left: 4px solid #2563eb;
+            padding: 16px;
+            border-radius: 8px;
+            font-weight: bold;
+            line-height: 1.5;
+        }
+
+        .error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .loading {
+            color: #2563eb;
+            font-size: 14px;
+        }
+
+        footer {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 12px;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 500px) {
+            body {
+                padding: 25px 14px;
+            }
+
+            h1 {
+                font-size: 25px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .info-row {
+                gap: 10px;
+                font-size: 13px;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <!-- Header -->
+        <header>
+            <div class="icon">&#128218;</div>
+            <h1>Student API Interface</h1>
+            <p class="subtitle">
+                Access student information, course details,
+                and personalized greetings.
+            </p>
+        </header>
+
+        <!-- Student Information API -->
+        <section class="card">
+            <h2>Student Information</h2>
+            <p class="description">
+                Retrieve student details from the Student API endpoint.
+            </p>
+
+            <button onclick="loadStudent()">
+                Load Student Information
+            </button>
+
+            <div id="result" aria-live="polite"></div>
+        </section>
+
+        <!-- Custom Course API -->
+        <section class="card">
+            <h2>Course Information</h2>
+            <p class="description">
+                Retrieve course code, instructor, and schedule
+                from your custom Course API endpoint.
+            </p>
+
+            <button onclick="loadCourse()">
+                Load Course Information
+            </button>
+
+            <div id="courseResult" aria-live="polite"></div>
+        </section>
+
+        <!-- Greeting API -->
+        <section class="card">
+            <h2>Greeting API</h2>
+            <p class="description">
+                Enter your name to receive a personalized greeting.
+            </p>
+
+            <input
+                type="text"
+                id="nameInput"
+                placeholder="Enter your first name"
+                aria-label="Your first name"
+            >
+
+            <button onclick="sayHello()">Say Hello</button>
+
+            <div id="greeting" aria-live="polite"></div>
+        </section>
+
+        <!-- Footer -->
+        <footer>
+            Student API Interface &bull; Powered by Flask
+        </footer>
+
+    </div>
+
+    <script>
+        // Safely display values returned by the API.
+        function escapeHTML(value) {
+            return String(value ?? '').replace(/[&<>"']/g, character => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            })[character]);
+        }
+
+        // STUDENT INFORMATION API
+        function loadStudent() {
+            const result = document.getElementById('result');
+
+            result.innerHTML =
+                '<p class="loading">Loading student information...</p>';
+
+            fetch('/student')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load student data');
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    result.innerHTML = `
+                        <div class="info-box">
+                            <div class="info-row">
+                                <span class="info-label">Student ID</span>
+                                <span class="info-value">${escapeHTML(data.student_id)}</span>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="info-label">Name</span>
+                                <span class="info-value">${escapeHTML(data.name)}</span>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="info-label">Program</span>
+                                <span class="info-value">${escapeHTML(data.program)}</span>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="info-label">Year</span>
+                                <span class="info-value">${escapeHTML(data.year)}</span>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="info-label">Section</span>
+                                <span class="info-value">${escapeHTML(data.section)}</span>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    result.innerHTML =
+                        '<p class="error">Unable to retrieve student data. Please try again.</p>';
+
+                    console.error(error);
+                });
+        }
+
+        // CUSTOM COURSE API
+        function loadCourse() {
+            const result = document.getElementById('courseResult');
+
+            result.innerHTML =
+                '<p class="loading">Loading course information...</p>';
+
+            fetch('/course')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load course information');
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    result.innerHTML = `
+                        <div class="info-box">
+                            <div class="info-row">
+                                <span class="info-label">Course Code</span>
+                                <span class="info-value">${escapeHTML(data.course)}</span>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="info-label">Instructor</span>
+                                <span class="info-value">${escapeHTML(data.instructor)}</span>
+                            </div>
+
+                            <div class="info-row">
+                                <span class="info-label">Schedule</span>
+                                <span class="info-value">${escapeHTML(data.schedule)}</span>
+                            </div>
+                        </div>
+                    `;
+                })
+                .catch(error => {
+                    result.innerHTML =
+                        '<p class="error">Unable to retrieve course information. Please try again.</p>';
+
+                    console.error(error);
+                });
+        }
+
+        // GREETING API
+        function sayHello() {
+            const name = document.getElementById('nameInput').value.trim();
+            const greeting = document.getElementById('greeting');
+
+            greeting.innerHTML =
+                '<p class="loading">Loading greeting...</p>';
+
+            fetch('/hello?name=' + encodeURIComponent(name))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load greeting');
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    const message = document.createElement('div');
+                    message.className = 'greeting-box';
+                    message.textContent = data.message;
+
+                    greeting.replaceChildren(message);
+                })
+                .catch(error => {
+                    greeting.innerHTML =
+                        '<p class="error">Unable to retrieve greeting. Please try again.</p>';
+
+                    console.error(error);
+                });
+        }
+
+        // Press Enter to submit the greeting.
+        document.getElementById('nameInput').addEventListener(
+            'keydown',
+            function(event) {
+                if (event.key === 'Enter') {
+                    sayHello();
+                }
+            }
+        );
+    </script>
+</body>
+</html>
