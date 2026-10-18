@@ -56,6 +56,20 @@ def get_student_by_id(id):
     return jsonify(dict(student))
 
 
+@app.route('/students/section/<section>')
+def get_students_by_section(section):
+    conn = get_db_connection()
+
+    students = conn.execute(
+        'SELECT * FROM students WHERE section = ?',
+        (section,)
+    ).fetchall()
+
+    conn.close()
+
+    return jsonify([dict(student) for student in students])
+
+
 @app.route('/course')
 def get_course():
     return jsonify({

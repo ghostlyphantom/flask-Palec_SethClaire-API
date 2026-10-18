@@ -285,6 +285,29 @@
             <div id="studentList" aria-live="polite"></div>
         </section>
 
+
+                <!-- Students by Section -->
+        <section class="card">
+            <h2>Students by Section</h2>
+            <p class="description">
+                Retrieve student records belonging to a specific section
+                stored in the SQLite database.
+            </p>
+
+            <select id="section">
+                <option value="A">Section A</option>
+                <option value="B">Section B</option>
+                <option value="C">Section C</option>
+            </select>
+
+            <button onclick="loadStudentsBySection()">Load Students</button>
+
+            <div id="sectionStudentList" aria-live="polite"></div>
+        </section>
+
+
+        
+
         <!-- Footer -->
         <footer>
             Student API Interface &bull; Powered by Flask
@@ -476,6 +499,58 @@
                 })
                 .catch(error => {
                     studentList.innerHTML =
+                        '<p class="error">Unable to retrieve student records.</p>';
+
+                    console.error(error);
+                });
+        }
+
+                // STUDENTS BY SECTION
+        function loadStudentsBySection() {
+            const section = document.getElementById('section').value;
+            const sectionStudentList = document.getElementById('sectionStudentList');
+
+            sectionStudentList.innerHTML =
+                '<p class="loading">Loading student records...</p>';
+
+            fetch('/students/section/' + encodeURIComponent(section))
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load student records');
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.length === 0) {
+                        sectionStudentList.innerHTML =
+                            '<p>No students found in this section.</p>';
+                        return;
+                    }
+
+                    let output = '<div class="info-box">';
+
+                    data.forEach(student => {
+                        output += `
+                            <div class="info-row">
+                                <span class="info-label">
+                                    ${escapeHTML(student.student_id)}
+                                </span>
+                                <span class="info-value">
+                                    ${escapeHTML(student.name)} |
+                                    ${escapeHTML(student.program)} |
+                                    Year ${escapeHTML(student.year)} |
+                                    Section ${escapeHTML(student.section)}
+                                </span>
+                            </div>
+                        `;
+                    });
+
+                    output += '</div>';
+                    sectionStudentList.innerHTML = output;
+                })
+                .catch(error => {
+                    sectionStudentList.innerHTML =
                         '<p class="error">Unable to retrieve student records.</p>';
 
                     console.error(error);
