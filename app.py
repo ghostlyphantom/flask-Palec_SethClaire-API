@@ -55,7 +55,7 @@ def get_student_by_id(id):
 
     return jsonify(dict(student))
 
-
+# STUDENTS BY SECTION
 @app.route('/students/section/<section>')
 def get_students_by_section(section):
     conn = get_db_connection()
@@ -68,7 +68,6 @@ def get_students_by_section(section):
     conn.close()
 
     return jsonify([dict(student) for student in students])
-
 
 @app.route('/course')
 def get_course():
