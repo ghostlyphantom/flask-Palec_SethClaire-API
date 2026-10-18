@@ -273,6 +273,18 @@
             <div id="greeting" aria-live="polite"></div>
         </section>
 
+                <!-- Students from Database -->
+        <section class="card">
+            <h2>Students from Database</h2>
+            <p class="description">
+                Retrieve all student records stored in the SQLite database.
+            </p>
+
+            <button onclick="loadStudents()">Load Students</button>
+
+            <div id="studentList" aria-live="polite"></div>
+        </section>
+
         <!-- Footer -->
         <footer>
             Student API Interface &bull; Powered by Flask
@@ -414,6 +426,57 @@
                 .catch(error => {
                     greeting.innerHTML =
                         '<p class="error">Unable to retrieve greeting. Please try again.</p>';
+
+                    console.error(error);
+                });
+        }
+
+        // STUDENTS FROM DATABASE
+        function loadStudents() {
+            const studentList = document.getElementById('studentList');
+
+            studentList.innerHTML =
+                '<p class="loading">Loading student records...</p>';
+
+            fetch('/students')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to load student records');
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.length === 0) {
+                        studentList.innerHTML =
+                            '<p>No student records found.</p>';
+                        return;
+                    }
+
+                    let output = '<div class="info-box">';
+
+                    data.forEach(student => {
+                        output += `
+                            <div class="info-row">
+                                <span class="info-label">
+                                    ${escapeHTML(student.student_id)}
+                                </span>
+                                <span class="info-value">
+                                    ${escapeHTML(student.name)} |
+                                    ${escapeHTML(student.program)} |
+                                    Year ${escapeHTML(student.year)} |
+                                    Section ${escapeHTML(student.section)}
+                                </span>
+                            </div>
+                        `;
+                    });
+
+                    output += '</div>';
+                    studentList.innerHTML = output;
+                })
+                .catch(error => {
+                    studentList.innerHTML =
+                        '<p class="error">Unable to retrieve student records.</p>';
 
                     console.error(error);
                 });
