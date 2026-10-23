@@ -209,6 +209,64 @@
                 width: 100%;
             }
         }
+        
+/* CRUD Student Records Table */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    margin-top: 25px;
+}
+
+.crud-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    color: #111;
+    font-size: 15px;
+}
+
+.crud-table th,
+.crud-table td {
+    border: 1px solid #ccc;
+    padding: 12px 9px;
+    text-align: left;
+}
+
+.crud-table th {
+    background: #eeeeee;
+    font-weight: bold;
+}
+
+.crud-table tbody tr:hover {
+    background: #f5f5f5;
+}
+
+.crud-table .edit-btn {
+    background: #087bff;
+    color: white;
+    border: none;
+    padding: 9px 14px;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.crud-table .delete-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 9px 14px;
+    cursor: pointer;
+    margin: 2px;
+}
+
+.crud-table .edit-btn:hover {
+    background: #0056b3;
+}
+
+.crud-table .delete-btn:hover {
+    background: #b02a37;
+}
+
     </style>
 </head>
 
@@ -304,6 +362,76 @@
 
             <div id="sectionStudentList" aria-live="polite"></div>
         </section>
+
+        
+<!-- CRUD Student Management -->
+<section class="card">
+    <h2>Student CRUD Management</h2>
+    <p class="description">
+        Add, view, edit, and delete student records.
+    </p>
+
+    <form id="studentForm">
+        <input type="hidden" id="recordId">
+
+        <input type="text" id="crudStudentId"
+               placeholder="Student ID" required>
+
+        <input type="text" id="crudName"
+               placeholder="Name" required>
+
+        <input type="text" id="crudProgram"
+               placeholder="Program" required>
+
+        <input type="number" id="crudYear"
+               placeholder="Year" required>
+
+        <input type="text" id="crudSection"
+               placeholder="Section" required>
+
+        <button type="submit" id="saveButton">Add Student</button>
+        <button type="button" onclick="clearStudentForm()">Clear</button>
+    </form>
+
+    <div id="crudMessage" aria-live="polite"></div>
+
+    <div id="crudStudentList"></div>
+
+    
+<!-- MY RECORDS SECTION -->
+<section class="card" id="myRecordsSection">
+    <h2>My Records</h2>
+    <p>Source: My own students database.</p>
+
+    <button type="button" onclick="loadMyRecords()">
+        Refresh My Records
+    </button>
+
+    <div id="myRecordsMessage"></div>
+
+    <div class="table-container">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>Database ID</th>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Program</th>
+                    <th>Year</th>
+                    <th>Section</th>
+                </tr>
+            </thead>
+            <tbody id="myRecordsTableBody">
+                <tr>
+                    <td colspan="6">Click Refresh My Records to load records.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+</section>
+
 
 
         
@@ -556,6 +684,270 @@
                     console.error(error);
                 });
         }
+
+        
+// CRUD STUDENT MANAGEMENT
+let currentStudents = [];
+let editingStudentId = null;
+
+// READ: Load all students from the CRUD API
+
+async function loadCRUDStudents() {
+    const list = document.getElementById('crudStudentList');
+    list.innerHTML = '<p>Loading student records...</p>';
+
+    try {
+        const response = await fetch('/api/students');
+
+        if (!response.ok) {
+            throw new Error('Failed to load student records');
+        }
+
+        currentStudents = await response.json();
+
+        if (currentStudents.length === 0) {
+            list.innerHTML = '<p>No student records found.</p>';
+            return;
+        }
+
+        let output = `
+            <h3>Student Records</h3>
+            <div class="table-container">
+                <table class="crud-table">
+                    <thead>
+                        <tr>
+                            <th>Database ID</th>
+                            <th>Student ID</th>
+                            <th>Name</th>
+                            <th>Program</th>
+                            <th>Year</th>
+                            <th>Section</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+        `;
+
+        currentStudents.forEach(student => {
+            output += `
+                <tr>
+                    <td>${escapeHTML(student.id)}</td>
+                    <td>${escapeHTML(student.student_id)}</td>
+                    <td>${escapeHTML(student.name)}</td>
+                    <td>${escapeHTML(student.program)}</td>
+                    <td>${escapeHTML(student.year)}</td>
+                    <td>${escapeHTML(student.section)}</td>
+                    <td>
+                        <button type="button"
+                            class="edit-btn"
+                            onclick="editCRUDStudent(${Number(student.id)})">
+                            Edit
+                        </button>
+
+                        <button type="button"
+                            class="delete-btn"
+                            onclick="deleteCRUDStudent(${Number(student.id)})">
+                            Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        output += `
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        list.innerHTML = output;
+
+    } catch (error) {
+        list.innerHTML =
+            '<p class="error">Unable to load CRUD records. Check your API.</p>';
+
+        console.error(error);
+    }
+}
+
+
+// CREATE and UPDATE
+document.getElementById('studentForm')
+    .addEventListener('submit', async function(event) {
+        event.preventDefault();
+
+        const studentData = {
+            student_id: document.getElementById('crudStudentId').value.trim(),
+            name: document.getElementById('crudName').value.trim(),
+            program: document.getElementById('crudProgram').value.trim(),
+            year: document.getElementById('crudYear').value,
+            section: document.getElementById('crudSection').value.trim()
+        };
+
+        const isEditing = editingStudentId !== null;
+
+        const url = isEditing
+            ? `/api/students/${editingStudentId}`
+            : '/api/students';
+
+        const method = isEditing ? 'PUT' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(studentData)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Operation failed');
+            }
+
+            document.getElementById('crudMessage').textContent =
+                result.message || 'Operation successful';
+
+            clearStudentForm();
+            await loadCRUDStudents();
+
+            // Refresh the existing student displays too.
+            loadStudents();
+            loadStudentsBySection();
+
+        } catch (error) {
+            document.getElementById('crudMessage').textContent =
+                'Error: ' + error.message;
+        }
+    });
+
+// Select a record for editing
+function editCRUDStudent(id) {
+    const student = currentStudents.find(s => s.id === id);
+
+    if (!student) return;
+
+    editingStudentId = id;
+
+    document.getElementById('crudStudentId').value =
+        student.student_id ?? '';
+
+    document.getElementById('crudName').value =
+        student.name ?? '';
+
+    document.getElementById('crudProgram').value =
+        student.program ?? '';
+
+    document.getElementById('crudYear').value =
+        student.year ?? '';
+
+    document.getElementById('crudSection').value =
+        student.section ?? '';
+
+    document.getElementById('saveButton').textContent =
+        'Update Student';
+
+    document.getElementById('crudMessage').textContent =
+        'Editing student record ID: ' + id;
+}
+
+// DELETE
+async function deleteCRUDStudent(id) {
+    if (!confirm('Are you sure you want to delete this student?')) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/students/${id}`, {
+            method: 'DELETE'
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || 'Delete failed');
+        }
+
+        document.getElementById('crudMessage').textContent =
+            result.message || 'Student deleted';
+
+        if (editingStudentId === id) {
+            clearStudentForm();
+        }
+
+        await loadCRUDStudents();
+        loadStudents();
+        loadStudentsBySection();
+
+    } catch (error) {
+        document.getElementById('crudMessage').textContent =
+            'Error: ' + error.message;
+    }
+}
+
+// Clear the form
+function clearStudentForm() {
+    document.getElementById('studentForm').reset();
+    editingStudentId = null;
+
+    document.getElementById('saveButton').textContent =
+        'Add Student';
+}
+
+
+async function loadMyRecords() {
+    const tableBody = document.getElementById('myRecordsTableBody');
+    const message = document.getElementById('myRecordsMessage');
+
+    tableBody.innerHTML = `
+        <tr><td colspan="6">Loading records...</td></tr>
+    `;
+
+    try {
+        const response = await fetch('/students');
+
+        if (!response.ok) {
+            throw new Error('Unable to retrieve records.');
+        }
+
+        const students = await response.json();
+
+        if (students.length === 0) {
+            tableBody.innerHTML = `
+                <tr><td colspan="6">No records found.</td></tr>
+            `;
+            message.textContent = '';
+            return;
+        }
+
+        tableBody.innerHTML = students.map(student => `
+            <tr>
+                <td>${escapeHTML(student.id)}</td>
+                <td>${escapeHTML(student.student_id)}</td>
+                <td>${escapeHTML(student.name)}</td>
+                <td>${escapeHTML(student.program)}</td>
+                <td>${escapeHTML(student.year)}</td>
+                <td>${escapeHTML(student.section)}</td>
+            </tr>
+        `).join('');
+
+        message.textContent = 'Records refreshed successfully.';
+    } catch (error) {
+        tableBody.innerHTML = `
+            <tr><td colspan="6">Unable to load records.</td></tr>
+        `;
+
+        message.textContent = error.message;
+        console.error(error);
+    }
+}
+
+
+// Load CRUD records when the page opens
+loadCRUDStudents();
+
 
         // Press Enter to submit the greeting.
         document.getElementById('nameInput').addEventListener(

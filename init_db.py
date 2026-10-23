@@ -21,9 +21,8 @@ students = [
     ('24-00379', 'Crystal Mae Elizares', 'BSIT', 3, 'B'),
     ('24-00125', 'Jezalyn Indic', 'BSIT', 3, 'A'),
     ('24-00125', 'Jiza Mae Gubac', 'BSIT', 3, 'A'),
-    ('24-00125', 'Stephene Jeke Paclibar', 'BSIT', 3, 'C')
+    ('24-00125', 'Stephene Jeke Paclibar', 'BSIT', 3, '')
 ]
-
 cursor.executemany('''
     INSERT INTO students (student_id, name, program, year, section)
     VALUES (?, ?, ?, ?, ?)
