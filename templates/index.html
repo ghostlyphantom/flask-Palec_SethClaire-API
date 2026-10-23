@@ -406,6 +406,19 @@
     <button type="button" onclick="loadMyRecords()">
         Refresh My Records
     </button>
+    
+<label for="myRecordsSearch">Search My Records:</label>
+<input
+    type="text"
+    id="myRecordsSearch"
+    placeholder="Enter student name or ID"
+>
+
+<h3>My Selected Record Details</h3>
+<div id="myRecordDetails">
+    Select View Details to see a student's information.
+</div>
+
 
     <div id="myRecordsMessage"></div>
 
@@ -429,6 +442,45 @@
         </table>
     </div>
 </section>
+
+<!-- CLASSMATE'S RECORDS -->
+<section class="card" id="classmateRecordsSection">
+    <h2>Classmate's Records</h2>
+    <p>Source: Classmate's student database (Remote API).</p>
+
+    <button type="button" onclick="loadClassmateRecords()">
+        Refresh Classmate's Records
+    </button>
+
+    <div id="classmateMessage"></div>
+
+    <div class="table-container">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    <th>Database ID</th>
+                    <th>Student ID</th>
+                    <th>Name</th>
+                    <th>Program</th>
+                    <th>Year</th>
+                    <th>Section</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="classmateTableBody">
+                <tr>
+                    <td colspan="7">Click refresh to retrieve records.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h3>Selected Classmate Record Details</h3>
+    <div id="classmateDetails">
+        Select a record to view its details.
+    </div>
+</section>
+
 
 </section>
 
@@ -943,6 +995,172 @@ async function loadMyRecords() {
         console.error(error);
     }
 }
+
+
+let classmateStudents = [];
+
+async function loadClassmateRecords() {
+    const tableBody = document.getElementById('classmateTableBody');
+    const message = document.getElementById('classmateMessage');
+
+    tableBody.innerHTML =
+        '<tr><td colspan="7">Loading classmate records...</td></tr>';
+
+    try {
+        const response = await fetch('/api/classmate-students');
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Unable to retrieve records.');
+        }
+
+        classmateStudents = data;
+
+        if (classmateStudents.length === 0) {
+            tableBody.innerHTML =
+                '<tr><td colspan="7">No classmate records found.</td></tr>';
+            message.textContent = 'No records returned by the API.';
+            return;
+        }
+
+        tableBody.innerHTML = classmateStudents.map((student, index) => `
+            <tr>
+                <td>${escapeHTML(student.id ?? 'N/A')}</td>
+                <td>${escapeHTML(student.student_id ?? 'N/A')}</td>
+                <td>${escapeHTML(student.name ?? 'N/A')}</td>
+                <td>${escapeHTML(student.program ?? 'N/A')}</td>
+                <td>${escapeHTML(student.year ?? 'N/A')}</td>
+                <td>${escapeHTML(student.section ?? 'N/A')}</td>
+                <td>
+                    <button type="button"
+                        onclick="viewClassmateDetails(${index})">
+                        View Details
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+        message.textContent = 'Classmate records retrieved successfully.';
+
+    } catch (error) {
+        tableBody.innerHTML =
+            '<tr><td colspan="7">Unable to load classmate records.</td></tr>';
+
+        message.textContent = error.message;
+        console.error(error);
+    }
+}
+
+function viewClassmateDetails(index) {
+    const student = classmateStudents[index];
+
+    if (!student) return;
+
+    const details = document.getElementById('classmateDetails');
+
+    details.innerHTML = Object.entries(student).map(([key, value]) => `
+        <p>
+            <strong>${escapeHTML(key.replaceAll('_', ' '))}:</strong>
+            ${escapeHTML(value ?? 'N/A')}
+        </p>
+    `).join('');
+}
+
+
+let myStudents = [];
+
+async function loadMyRecords() {
+    const tableBody = document.getElementById('myRecordsTableBody');
+    const message = document.getElementById('myRecordsMessage');
+
+    tableBody.innerHTML =
+        '<tr><td colspan="7">Loading records...</td></tr>';
+
+    try {
+        const response = await fetch('/students');
+
+        if (!response.ok) {
+            throw new Error('Unable to retrieve your records.');
+        }
+
+        myStudents = await response.json();
+
+        displayMyRecords();
+        message.textContent = 'Your records loaded successfully.';
+
+    } catch (error) {
+        tableBody.innerHTML =
+            '<tr><td colspan="7">Unable to load records.</td></tr>';
+
+        message.textContent = error.message;
+        console.error(error);
+    }
+}
+
+function displayMyRecords() {
+    const tableBody = document.getElementById('myRecordsTableBody');
+    const query = document.getElementById('myRecordsSearch')
+        .value.toLowerCase().trim();
+
+    const filteredStudents = myStudents.filter(student =>
+        [
+            student.id,
+            student.student_id,
+            student.name,
+            student.program,
+            student.year,
+            student.section
+        ].some(value =>
+            String(value ?? '').toLowerCase().includes(query)
+        )
+    );
+
+    if (filteredStudents.length === 0) {
+        tableBody.innerHTML =
+            '<tr><td colspan="7">No matching records found.</td></tr>';
+        return;
+    }
+
+    tableBody.innerHTML = filteredStudents.map(student => `
+        <tr>
+            <td>${escapeHTML(student.id ?? '')}</td>
+            <td>${escapeHTML(student.student_id ?? '')}</td>
+            <td>${escapeHTML(student.name ?? '')}</td>
+            <td>${escapeHTML(student.program ?? '')}</td>
+            <td>${escapeHTML(student.year ?? '')}</td>
+            <td>${escapeHTML(student.section ?? '')}</td>
+            <td>
+                <button type="button"
+                    onclick="viewMyRecord(${Number(student.id)})">
+                    View Details
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function viewMyRecord(id) {
+    const student = myStudents.find(
+        student => Number(student.id) === Number(id)
+    );
+
+    if (!student) return;
+
+    const details = document.getElementById('myRecordDetails');
+
+    details.innerHTML = Object.entries(student).map(([key, value]) => `
+        <p>
+            <strong>${escapeHTML(key.replaceAll('_', ' '))}:</strong>
+            ${escapeHTML(value ?? 'N/A')}
+        </p>
+    `).join('');
+}
+
+// Search while typing
+document.getElementById('myRecordsSearch')
+    .addEventListener('input', displayMyRecords);
+
+
 
 
 // Load CRUD records when the page opens

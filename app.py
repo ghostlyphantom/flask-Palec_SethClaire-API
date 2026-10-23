@@ -1,4 +1,5 @@
 import sqlite3
+import requests
 from flask import Flask, jsonify, request, render_template
 
 app = Flask(__name__)
@@ -167,6 +168,37 @@ def api_students():
     conn.close()
 
     return jsonify([dict(student) for student in students])
+
+
+# STEP 8: Retrieve classmate's records (READ ONLY)
+CLASSMATE_API = "https://jezalyn-indic.onrender.com/api/students"
+
+@app.route('/api/classmate-students', methods=['GET'])
+def get_classmate_students():
+    try:
+        response = requests.get(CLASSMATE_API, timeout=15)
+        response.raise_for_status()
+
+        data = response.json()
+
+        if not isinstance(data, list):
+            return jsonify({
+                "error": "Classmate API did not return a list of records."
+            }), 502
+
+        return jsonify(data)
+
+    except requests.RequestException as error:
+        app.logger.error("Classmate API request failed: %s", error)
+        return jsonify({
+            "error": "Unable to retrieve classmate records. Check the API URL."
+        }), 502
+
+    except ValueError:
+        return jsonify({
+            "error": "Classmate API returned invalid JSON."
+        }), 502
+
 
 
 
