@@ -327,6 +327,109 @@ def import_partner_student():
     return save_classmate_record()
 
 
+
+# Send one of your records to the partner's API
+@app.route('/api/send-to-partner', methods=['POST'])
+def send_to_partner():
+    data = request.get_json(silent=True)
+    student, error = validate_student(data)
+
+    if error:
+        return jsonify({"error": error}), 400
+
+    try:
+        response = requests.post(
+            CLASSMATE_API,
+            json=student,
+            timeout=20
+        )
+
+        if not response.ok:
+            return jsonify({
+                "error": "Partner API rejected the record.",
+                "partner_status": response.status_code,
+                "partner_response": response.text[:500]
+            }), 502
+
+        try:
+            partner_result = response.json()
+        except ValueError:
+            partner_result = {"response": response.text[:500]}
+
+        return jsonify({
+            "message": "Partner API accepted the record.",
+            "partner_response": partner_result
+        }), 200
+
+    except requests.RequestException as e:
+        app.logger.exception("Failed to send record to partner")
+        return jsonify({
+            "error": "Could not connect to the partner API.",
+            "details": str(e)
+        }), 502
+
+
+# Integration Dashboard: Local, Imported, and Partner API records
+@app.route('/api/integration-dashboard', methods=['GET'])
+def integration_dashboard():
+    conn = get_db_connection()
+
+    try:
+        records = [
+            dict(row) for row in conn.execute(
+                'SELECT * FROM students ORDER BY id DESC'
+            ).fetchall()
+        ]
+    finally:
+        conn.close()
+
+    local_records = [
+        s for s in records
+        if (s.get('source') or 'Local').strip().lower() == 'local'
+    ]
+
+    imported_records = [
+        s for s in records
+        if (s.get('source') or '').strip().lower()
+        in ('classmate api', 'imported', 'partner api')
+    ]
+
+    partner_records = []
+    partner_error = None
+
+    try:
+        response = requests.get(CLASSMATE_API, timeout=15)
+        response.raise_for_status()
+        remote_data = response.json()
+
+        if isinstance(remote_data, list):
+            partner_records = [
+                {
+                    **s,
+                    'source': 'Partner API'
+                }
+                for s in remote_data
+                if isinstance(s, dict)
+            ]
+        else:
+            partner_error = "Partner API did not return a list."
+    except (requests.RequestException, ValueError) as e:
+        app.logger.warning("Dashboard could not retrieve partner records: %s", e)
+        partner_error = "Partner API records could not be retrieved."
+
+    return jsonify({
+        "counts": {
+            "local": len(local_records),
+            "imported": len(imported_records),
+            "partner": len(partner_records)
+        },
+        "local": local_records,
+        "imported": imported_records,
+        "partner": partner_records,
+        "partner_error": partner_error
+    })
+
+
 # COURSE API
 @app.route('/course')
 def get_course():

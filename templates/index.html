@@ -63,10 +63,19 @@
   <section class="card" id="myRecordsSection">
     <h2>My Records</h2><p class="description">Records saved in your own SQLite database.</p>
     <button type="button" onclick="loadMyRecords()">Load My Records</button>
-    <label for="myRecordsSearch">Search My Records</label><input type="text" id="myRecordsSearch" placeholder="Enter student name, ID or program">
+    <label for="myRecordsSearch">Search My Records</label><input type="text" id="myRecordsSearch" placeholder="Enter student name, ID, program, or section">
     <h3>My Selected Record Details</h3><div id="myRecordDetails" class="details-box">Select View Details to see a student's information.</div>
     <div id="myRecordsMessage" class="message" aria-live="polite"></div>
     <div class="table-container"><table class="crud-table"><thead><tr><th>Database ID</th><th>Student ID</th><th>Name</th><th>Program</th><th>Year</th><th>Section</th><th>Source</th><th>Actions</th></tr></thead><tbody id="myRecordsTableBody"><tr><td colspan="8">Click Load My Records to load records.</td></tr></tbody></table></div>
+  </section>
+
+  <section class="card" id="sendPartnerSection">
+    <h2>Send a Record to Partner API</h2>
+    <p class="description">Choose a record from My Records and send it to your partner's API. The partner API must support POST requests for this to work.</p>
+    <label for="sendRecordSelect">Select a record from your database</label>
+    <select id="sendRecordSelect"><option value="">Load records first</option></select>
+    <button type="button" onclick="sendRecordToPartner()">Send Selected Record to Partner</button>
+    <div id="sendPartnerMessage" class="message" aria-live="polite"></div>
   </section>
 
   <section class="card" id="classmateRecordsSection">
@@ -75,6 +84,17 @@
     <div id="classmateMessage" class="message" aria-live="polite"></div>
     <div class="table-container"><table class="crud-table"><thead><tr><th>Database ID</th><th>Student ID</th><th>Name</th><th>Program</th><th>Year</th><th>Section</th><th>Source</th><th>Action</th></tr></thead><tbody id="classmateTableBody"><tr><td colspan="8">Click Retrieve Classmate's Records to load records.</td></tr></tbody></table></div>
     <h3>Selected Classmate Record Details</h3><div id="classmateDetails" class="details-box">Select View Details to see a classmate's information.</div>
+  </section>
+
+  <section class="card" id="integrationDashboardSection">
+    <h2>Integration Dashboard</h2>
+    <p class="description">Overview of records saved locally, imported from the classmate API, and currently available from the partner API.</p>
+    <button type="button" onclick="loadIntegrationDashboard()">Refresh Integration Dashboard</button>
+    <div id="dashboardMessage" class="message" aria-live="polite"></div>
+    <div id="dashboardCounts" class="form-grid"></div>
+    <h3>Local Records</h3><div id="dashboardLocal"></div>
+    <h3>Imported Records</h3><div id="dashboardImported"></div>
+    <h3>Partner API Records</h3><div id="dashboardPartner"></div>
   </section>
 
   <footer>Student API Interface &bull; Powered by Flask</footer>
@@ -191,13 +211,56 @@ function displayMyRecords() {
   const body = document.getElementById('myRecordsTableBody'); const query = document.getElementById('myRecordsSearch').value.toLowerCase().trim();
   const filtered = myStudents.filter(s => [s.id,s.student_id,s.name,s.program,s.year,s.section,s.source].some(v => String(v ?? '').toLowerCase().includes(query)));
   if (!filtered.length) { body.innerHTML = '<tr><td colspan="8">No matching records found.</td></tr>'; return; }
-  body.innerHTML = filtered.map(s => `<tr><td>${escapeHTML(s.id ?? 'N/A')}</td><td>${escapeHTML(s.student_id ?? 'N/A')}</td><td>${escapeHTML(s.name ?? 'N/A')}</td><td>${escapeHTML(s.program ?? 'N/A')}</td><td>${escapeHTML(s.year ?? 'N/A')}</td><td>${escapeHTML(s.section || 'N/A')}</td><td>${escapeHTML(s.source || 'Local')}</td><td><button type="button" onclick="viewMyRecord(${Number(s.id)})">View Details</button></td></tr>`).join('');
+  body.innerHTML = filtered.map(s => `<tr><td>${escapeHTML(s.id ?? 'N/A')}</td><td>${escapeHTML(s.student_id ?? 'N/A')}</td><td>${escapeHTML(s.name ?? 'N/A')}</td><td>${escapeHTML(s.program ?? 'N/A')}</td><td>${escapeHTML(s.year ?? 'N/A')}</td><td>${escapeHTML(s.section || 'N/A')}</td><td>${escapeHTML(s.source || 'Local')}</td><td><button type="button" onclick="viewMyRecord(${Number(s.id)})">View Details</button><button type="button" class="save-btn" onclick="chooseRecordToSend(${Number(s.id)})">Select to Send</button></td></tr>`).join('');
+  const select = document.getElementById('sendRecordSelect');
+  const previous = select.value;
+  select.innerHTML = '<option value="">Choose a student record</option>' + myStudents.map(s => `<option value="${Number(s.id)}">${escapeHTML(s.student_id)} — ${escapeHTML(s.name)} (${escapeHTML(s.source || 'Local')})</option>`).join('');
+  if (myStudents.some(s => String(s.id) === previous)) select.value = previous;
 }
 
 function viewMyRecord(id) {
   const s = myStudents.find(item => Number(item.id) === Number(id)); if (!s) return;
   const rows = {'Database ID':s.id,'Student ID':s.student_id,'Name':s.name,'Program':s.program,'Year':s.year,'Section':s.section,'Source':s.source || 'Local'};
   document.getElementById('myRecordDetails').innerHTML = Object.entries(rows).map(([k,v]) => `<p><strong>${escapeHTML(k)}:</strong> ${escapeHTML(v ?? 'N/A')}</p>`).join('');
+}
+
+function chooseRecordToSend(id) {
+  document.getElementById('sendRecordSelect').value = String(id);
+  document.getElementById('sendPartnerSection').scrollIntoView({behavior:'smooth',block:'center'});
+  document.getElementById('sendPartnerMessage').textContent = 'Record selected. Click Send Selected Record to Partner.';
+}
+
+async function sendRecordToPartner() {
+  const id = Number(document.getElementById('sendRecordSelect').value);
+  const message = document.getElementById('sendPartnerMessage');
+  const s = myStudents.find(item => Number(item.id) === id);
+  if (!s) { message.textContent = 'Please load My Records and select a record first.'; return; }
+  const payload = {student_id:s.student_id,name:s.name,program:s.program,year:s.year,section:s.section};
+  message.textContent = 'Sending record to partner API...';
+  try {
+    const result = await fetchJSON('/api/send-to-partner', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    message.textContent = result.message || 'Record sent successfully. Ask your partner to verify receipt.';
+  } catch(e) { message.textContent = 'Send failed: ' + e.message + '. Confirm that your partner API supports POST /api/students.'; }
+}
+
+function compactDashboardRows(records) {
+  if (!records || !records.length) return '<p>No records in this category.</p>';
+  return '<div class="table-container"><table class="crud-table"><thead><tr><th>Student ID</th><th>Name</th><th>Program</th><th>Year</th><th>Section</th><th>Source</th></tr></thead><tbody>' + records.map(s => `<tr><td>${escapeHTML(s.student_id ?? 'N/A')}</td><td>${escapeHTML(s.name ?? 'N/A')}</td><td>${escapeHTML(s.program ?? 'N/A')}</td><td>${escapeHTML(s.year ?? 'N/A')}</td><td>${escapeHTML(s.section ?? 'N/A')}</td><td>${escapeHTML(s.source || 'Partner API')}</td></tr>`).join('') + '</tbody></table></div>';
+}
+
+async function loadIntegrationDashboard() {
+  const message = document.getElementById('dashboardMessage');
+  message.textContent = 'Loading integration dashboard...';
+  try {
+    const d = await fetchJSON('/api/integration-dashboard');
+    document.getElementById('dashboardCounts').innerHTML = [
+      ['Local Records', d.counts.local], ['Imported Records', d.counts.imported], ['Partner API Records', d.counts.partner]
+    ].map(([label,count]) => `<div class="info-box"><strong>${escapeHTML(label)}</strong><div style="font-size:28px;color:#1d4ed8;margin-top:8px">${escapeHTML(count)}</div></div>`).join('');
+    document.getElementById('dashboardLocal').innerHTML = compactDashboardRows(d.local);
+    document.getElementById('dashboardImported').innerHTML = compactDashboardRows(d.imported);
+    document.getElementById('dashboardPartner').innerHTML = compactDashboardRows(d.partner);
+    message.textContent = 'Dashboard refreshed. Local, Imported, and Partner API sources are shown separately.';
+  } catch(e) { message.innerHTML = `<span class="error">${escapeHTML(e.message)}. Add the dashboard route to app.py, then refresh.</span>`; }
 }
 
 async function loadClassmateRecords() {
@@ -228,7 +291,7 @@ document.getElementById('myRecordsSearch').addEventListener('input', displayMyRe
 document.getElementById('nameInput').addEventListener('keydown', event => { if (event.key === 'Enter') sayHello(); });
 
 // Load the local records when the page opens.
-document.addEventListener('DOMContentLoaded', () => { loadMyRecords(); loadCRUDStudents(); });
+document.addEventListener('DOMContentLoaded', () => { loadMyRecords(); loadCRUDStudents(); loadIntegrationDashboard(); });
 </script>
 </body>
 </html>
