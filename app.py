@@ -1,4 +1,4 @@
-
+#Updated for AWS Lightsail
 import sqlite3
 import requests
 from flask import Flask, jsonify, request, render_template
