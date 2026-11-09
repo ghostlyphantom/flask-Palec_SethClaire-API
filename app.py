@@ -229,8 +229,7 @@ def delete_student(id):
 
 
 # CLASSMATE'S EXTERNAL API
-CLASSMATE_API = "https://jezalyn-indic.onrender.com/api/students"
-
+CLASSMATE_API = "http://54.79.193.25/api/students"
 
 def fetch_classmate_records():
     try:
